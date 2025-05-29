@@ -4,9 +4,11 @@ app = Flask(__name__)
 
 @app.route('/checkMC', methods=['POST'])
 def check_mc():
-    # You can access data with: request.json
-    # For now, we just return true for all calls
-    return jsonify({"valid": True})
+    data = request.get_json()
+    if data and "MC_num" in data and data["MC_num"] == "12345678":
+        return jsonify({"valid": True})
+    else:
+        return jsonify({"valid": False})
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001)
