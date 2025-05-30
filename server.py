@@ -31,8 +31,10 @@ def check_mc():
 def fetchLoad():
     data = request.get_json()
     if not data or not "Location" in data or not "Equipment" in data:
+        print("Missing Location or Equipment")
         return jsonify({"error": True})
     if "sessionID" not in data or "sessionCode" not in data:
+        print("Missing sessionID or sessionCode")
         return jsonify({"error": True})
     conn = mysql.connector.connect(
         host="localhost",    
@@ -43,7 +45,6 @@ def fetchLoad():
     if not verifySession(data["sessionID"], data["sessionCode"], conn):
         return jsonify({"error": True})
     sql_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(sql_datetime)
     cursor = conn.cursor(dictionary=True)
     query = """
         SELECT * FROM loads_template
@@ -55,7 +56,6 @@ def fetchLoad():
     params = (f"%{data["Location"]}%", f"%{data["Equipment"]}%", f"{sql_datetime}")
     cursor.execute(query, params)
     results = cursor.fetchall()
-    print(results)
     cursor.close()
     conn.close()
     return jsonify(results)
@@ -76,6 +76,7 @@ def createSessionID():
     """
     cursor.execute(insert_query, (session_code, created_when))
     session_id = cursor.lastrowid #threadsafe apparently
+    conn.commit()
     cursor.close()
     conn.close()
     return session_id,session_code
