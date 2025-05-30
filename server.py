@@ -15,13 +15,10 @@ app = Flask(__name__)
 def check_mc():
     data = request.get_json()
     if data and "MC_num" in data:
-        url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/{data["MC_num"]}"
-        params = {
-            "webKey": "api_key"
-        }
-
-        response = requests.get(url, params=params)
-        if response["content"] == []:
+        url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/{data["MC_num"]}?webKey={api_key}"
+        response = requests.get(url)
+        data = response.json()
+        if data["content"] == []:
             return jsonify({"valid": False})
         else:
             return jsonify({"valid": True})
