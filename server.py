@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import requests
 from dotenv import load_dotenv
 from datetime import datetime
 import os
@@ -13,8 +14,17 @@ app = Flask(__name__)
 @app.route('/checkMC', methods=['POST'])
 def check_mc():
     data = request.get_json()
-    if data and "MC_num" in data and data["MC_num"] == "12345678":
-        return jsonify({"valid": True})
+    if data and "MC_num" in data:
+        url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/{data["MC_num"]}"
+        params = {
+            "webKey": "api_key"
+        }
+
+        response = requests.get(url, params=params)
+        if response["content"] == []:
+            return jsonify({"valid": False})
+        else:
+            return jsonify({"valid": True})
     else:
         return jsonify({"valid": False})
     
@@ -37,6 +47,7 @@ def fetchLoad():
         WHERE origin LIKE %s
         AND equipment_type LIKE %s
         AND pickup_datetime > %s
+        LIMIT 1
     """
     params = (f"%{data["Location"]}%", f"%{data["Equipment"]}%", f"{sql_datetime}")
     cursor.execute(query, params)
