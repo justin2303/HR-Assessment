@@ -9,12 +9,25 @@ services:
       MYSQL_ROOT_PASSWORD: Happy
       MYSQL_DATABASE: loadDB
       MYSQL_USER: user1
-      MYSQL_PASSWORD: Robotsdocker-compose up -d
+      MYSQL_PASSWORD: Robots
 
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
 
+
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - db
+
 volumes:
   db_data:
+  grafana_data:
