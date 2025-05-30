@@ -20,10 +20,10 @@ def check_mc():
         response = requests.get(url)
         data = response.json()
         if data["content"] == []:
-            sessionID, sessionCode = createSessionID()
-            return jsonify({"valid": False, "sessionID": sessionID,"sessionCode": sessionCode})
+            return jsonify({"valid": False})
         else:
-            return jsonify({"valid": True})
+            sessionID, sessionCode = createSessionID()
+            return jsonify({"valid": True, "sessionID": sessionID,"sessionCode": sessionCode})
     else:
         return jsonify({"valid": False})
     
@@ -60,14 +60,11 @@ def fetchLoad():
     conn.close()
     return jsonify(results)
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=3001)
-
 def createSessionID():
     conn = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Robots",
+        password="Happy",
         database="loadDB"
     )
     cursor = conn.cursor()
@@ -99,3 +96,5 @@ def verifySession(sessionID, sessionCode, conn):
         return True
     else:
         return False
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=3001)
