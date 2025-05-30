@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from datetime import datetime
 import os
 import mysql.connector
 
@@ -23,11 +24,13 @@ def fetchLoad():
     if not data or not "Location" in data or not "Minimum_Date" in data or not "Equipment" in data:
         return jsonify({"error": True})
     conn = mysql.connector.connect(
-        host="localhost",      # or your DB host
-        user="root",  # replace with your DB user
+        host="localhost",    
+        user="root",  
         password="Happy",
         database="loadDB"
     )
+    dt_obj = datetime.strptime(data["Minimum_Date"], "%A, %B %d, %Y at %I:%M:%S %p")
+    sql_datetime = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
 
     cursor = conn.cursor(dictionary=True)
     query = """
@@ -36,7 +39,7 @@ def fetchLoad():
         AND equipment_type LIKE %s
         AND pickup_datetime > %s
     """
-    params = (f"%{data["Location"]}%", f"%{data["Equipment"]}%", f"{data["Minimum_Date"]}")
+    params = (f"%{data["Location"]}%", f"%{data["Equipment"]}%", f"{sql_datetime}")
     cursor.execute(query, params)
     results = cursor.fetchall()
     print(results)
