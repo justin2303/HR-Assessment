@@ -3,6 +3,7 @@ import requests
 import random
 from dotenv import load_dotenv
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import os
 import mysql.connector
 
@@ -16,11 +17,23 @@ app = Flask(__name__)
 def check_mc():
     data = request.get_json()
     if data and "MC_num" in data:
+        start = datetime.now()
         url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/{data["MC_num"]}?webKey={api_key}"
         response = requests.get(url)
         data = response.json()
+        end = datetime.now()
+        duration = (end - start).total_seconds()
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="Happy",
+            database="loadDB"
+        )
+        recordMetric(duration, "VerifyMC", conn)
+        conn.close()
         if data["content"] == []:
             return jsonify({"valid": False})
+        
         else:
             sessionID, sessionCode = createSessionID()
             return jsonify({"valid": True, "sessionID": sessionID,"sessionCode": sessionCode})
@@ -44,6 +57,7 @@ def fetchLoad():
     )
     if not verifySession(data["sessionID"], data["sessionCode"], conn):
         return jsonify({"error": True})
+    
     sql_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor = conn.cursor(dictionary=True)
     query = """
@@ -54,8 +68,11 @@ def fetchLoad():
         LIMIT 1
     """
     params = (f"%{data["Location"]}%", f"%{data["Equipment"]}%", f"{sql_datetime}")
+    start = datetime.now()
     cursor.execute(query, params)
     results = cursor.fetchall()
+    duration = (datetime.now() - start).total_seconds()
+    recordMetric(duration, "fetchLoad", conn)
     cursor.close()
     conn.close()
     return jsonify(results)
@@ -134,6 +151,7 @@ def recordCallDetails(data, conn):
         return False
     start = result[0]
     diff = now - start
+    recordMetric(diff.total_seconds(),"UseCase",conn)
     minutes_diff = diff.total_seconds() / 60
     insert_query = """
         INSERT INTO session_metrics ( duration_minutes, outcome, sentiment, rate_increase)
@@ -161,5 +179,15 @@ def recordCallDetails(data, conn):
     conn.commit()
     return True
 
+def recordMetric(duration, service, conn):
+    cursor = conn.cursor()
+    curr_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+    insert_query = """
+        INSERT INTO api_call_metrics ( call_time, call_duration_seconds, service)
+        VALUES ( %s, %s, %s)
+    """
+    cursor.execute(insert_query, ( curr_time, duration, service))
+    conn.commit()
+    cursor.close()
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001)
