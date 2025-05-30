@@ -21,7 +21,7 @@ def check_mc():
 @app.route('/fetchLoad', methods=['POST'])
 def fetchLoad():
     data = request.get_json()
-    if not data or not "Location" in data or not "Minimum_Date" in data or not "Equipment" in data:
+    if not data or not "Location" in data or not "Equipment" in data:
         return jsonify({"error": True})
     conn = mysql.connector.connect(
         host="localhost",    
@@ -29,9 +29,8 @@ def fetchLoad():
         password="Happy",
         database="loadDB"
     )
-    dt_obj = datetime.strptime(data["Minimum_Date"], "%A, %B %d, %Y at %I:%M:%S %p")
-    sql_datetime = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
-
+    sql_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(sql_datetime)
     cursor = conn.cursor(dictionary=True)
     query = """
         SELECT * FROM loads_template
