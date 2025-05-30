@@ -141,7 +141,10 @@ def recordCallDetails(data, conn):
     """
     #convert the int and bools because the AI always gives string jsons
     price_increase = 0
-    price_increase = float(data["Price_Increase"])
+    try:
+        price_increase = float(data["Price_Increase"])
+    except ValueError:
+        print("Invalid price increase format")
     outcome = False
     if data["Outcome"] == "1":
         outcome = True
