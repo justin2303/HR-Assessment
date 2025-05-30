@@ -78,7 +78,7 @@ def createSessionID():
     session_id = cursor.lastrowid #threadsafe apparently
     cursor.close()
     conn.close()
-    return session_code,session_id
+    return session_id,session_code
 
 
 def verifySession(sessionID, sessionCode, conn):
