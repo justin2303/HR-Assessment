@@ -139,7 +139,15 @@ def recordCallDetails(data, conn):
         INSERT INTO session_metrics ( duration_minutes, outcome, sentiment, rate_increase)
         VALUES ( %s, %s, %s, %s)
     """
-    cursor.execute(insert_query, ( minutes_diff, data["Outcome"], data["Sentiment"], data["Price_Increase"]))
+    #convert the int and bools because the AI always gives string jsons
+    price_increase = 0
+    price_increase = float(data["Price_Increase"])
+    outcome = False
+    if data["Outcome"] == "1":
+        outcome = True
+    elif data["Outcome"] == "0":
+        outcome = False
+    cursor.execute(insert_query, ( minutes_diff, outcome, data["Sentiment"], price_increase))
     delete_query = """
         DELETE FROM session_table
         WHERE session_id = %s
