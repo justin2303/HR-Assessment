@@ -60,6 +60,28 @@ def fetchLoad():
     conn.close()
     return jsonify(results)
 
+@app.route('/closeSession', methods=['POST'])
+def closeSession():
+    data = request.get_json()
+    if not data or not "Sentiment" in data or not "Outcome" in data or not "Price_Increase" in data:
+        print("Missing data")
+        return jsonify({"error": True})
+    if "sessionID" not in data or "sessionCode" not in data:
+        print("Missing sessionID or sessionCode")
+        return jsonify({"error": True})
+    conn = mysql.connector.connect(
+        host="localhost",    
+        user="root",  
+        password="Happy",
+        database="loadDB"
+    )
+    if not verifySession(data["sessionID"], data["sessionCode"], conn):
+        return jsonify({"error": True})
+    if not recordCallDetails(data, conn):
+        return jsonify({"error": True})
+    else:
+        return jsonify({"error": False})
+
 def createSessionID():
     conn = mysql.connector.connect(
         host="localhost",
@@ -97,5 +119,36 @@ def verifySession(sessionID, sessionCode, conn):
         return True
     else:
         return False
+def recordCallDetails(data, conn):
+    now = datetime.now()
+    cursor = conn.cursor()
+    query = """
+        SELECT created_when FROM session_table
+        WHERE session_id = %s
+        AND session_code = %s
+        LIMIT 1
+    """
+    cursor.execute(query, (data["sessionID"], data["sessionCode"]))
+    result = cursor.fetchone()
+    if not result:
+        return False
+    start = result[0]
+    diff = now - start
+    minutes_diff = diff.total_seconds() / 60
+    insert_query = """
+        INSERT INTO session_metrics ( duration_minutes, outcome, sentiment, rate_increase)
+        VALUES ( %s, %s, %s, %s)
+    """
+    cursor.execute(insert_query, ( minutes_diff, data["Outcome"], data["Sentiment"], data["Price_Increase"]))
+    delete_query = """
+        DELETE FROM session_table
+        WHERE session_id = %s
+        AND session_code = %s
+        LIMIT 1
+    """
+    cursor.execute(delete_query, (data["sessionID"], data["sessionCode"]))
+    conn.commit()
+    return True
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001)
